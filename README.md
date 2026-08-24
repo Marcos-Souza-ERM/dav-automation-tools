@@ -1,16 +1,18 @@
 # DAV Automation Tools
 
-Ambiente Docker padronizado para desenvolvimento de projetos Python, com o objetivo de **reduzir o tempo de configuração de novos integrantes da equipe**.
+Ambiente Docker padronizado para desenvolvimento e ferramentas de automação da equipe, com o objetivo principal de **reduzir o tempo de configuração e ambientalização de novos integrantes**.
 
-Este projeto fornece uma imagem Docker com as principais dependências e ferramentas necessárias para os projetos da equipe. Dessa forma, um novo integrante não precisa realizar manualmente a instalação de Python, Java, Node.js, Tesseract, PostgreSQL Client e outras ferramentas.
+O projeto fornece uma base Docker com as principais dependências e ferramentas necessárias para os projetos da equipe. Dessa forma, um novo integrante não precisa realizar manualmente a instalação e configuração de ferramentas como Python, Java, Node.js, Tesseract, PostgreSQL Client e outras dependências comuns.
 
-A configuração é integrada ao **VS Code Dev Containers**, permitindo que o ambiente de desenvolvimento seja iniciado diretamente dentro do projeto que está sendo desenvolvido.
+Além da função principal de **padronização do ambiente de desenvolvimento**, o repositório também disponibiliza uma ferramenta independente para **processamento de documentos utilizando OCR**, executada através de uma imagem Docker específica.
+
+A configuração do ambiente de desenvolvimento é integrada ao **VS Code Dev Containers**, permitindo que os projetos da equipe sejam executados em um ambiente padronizado.
 
 ---
 
-## 🎯 Objetivo
+# 🎯 Objetivo
 
-O objetivo deste projeto é padronizar e simplificar a criação de ambientes de desenvolvimento.
+O principal objetivo do `dav-automation-tools` é **padronizar e simplificar a ambientalização de novos integrantes da equipe**.
 
 Sem este projeto, a entrada de um novo integrante pode exigir:
 
@@ -30,36 +32,69 @@ Com o `dav-automation-tools`, a ideia é que o integrante precise apenas:
 2. Ter o Docker instalado e em execução;
 3. Ter o VS Code instalado;
 4. Instalar a extensão **Dev Containers**;
-5. Clonar este repositório;
+5. Clonar o repositório;
 6. Configurar o `.devcontainer` no projeto que deseja executar;
 7. Abrir o projeto no Dev Container.
 
-O restante do ambiente é criado automaticamente pelo Docker.
+O restante do ambiente de desenvolvimento é criado automaticamente pelo Docker.
+
+Além disso, o repositório possui uma ferramenta de OCR que pode ser executada independentemente do Dev Container, utilizando uma imagem Docker própria.
 
 ---
 
 # 🏗️ Arquitetura
 
-O projeto funciona como uma **imagem base de desenvolvimento compartilhada**.
+O projeto possui duas funcionalidades principais:
+
+```text
+                         DAV Automation Tools
+                                  │
+                ┌─────────────────┴─────────────────┐
+                │                                   │
+                ▼                                   ▼
+       Ambiente de Desenvolvimento             Ferramenta OCR
+                │                                   │
+                │ .devcontainer                     │ Dockerfile.ocr
+                │                                   │
+                ▼                                   ▼
+        Dockerfile principal                  dav-automation-ocr
+                │                                   │
+                ▼                                   ▼
+       Imagem de desenvolvimento             Processamento de
+                │                             documentos
+                │                                   │
+                ▼                                   ▼
+        Projetos da equipe                 documentos/ → output/
+```
+
+## Ambiente de desenvolvimento
+
+A imagem principal funciona como uma **imagem base de desenvolvimento compartilhada**.
 
 O fluxo é:
 
 ```text
 Projeto do desenvolvedor
+
         │
         │ .devcontainer/devcontainer.json
         │
         ▼
+
 docker-compose.yml
+
         │
         │ build
         ▼
+
 dav-automation-tools
+
         │
         │ Dockerfile
         ▼
+
 Imagem Docker de desenvolvimento
-        │
+
         ├── Python 3.13
         ├── Java 17
         ├── Node.js 22
@@ -76,6 +111,7 @@ Por exemplo:
 
 ```text
 Projeto A
+
 ├── requirements.txt
 └── .devcontainer/
     ├── docker-compose.yml
@@ -95,58 +131,112 @@ instala automaticamente as dependências específicas daquele projeto.
 
 # 📁 Estrutura do repositório
 
-Este repositório possui atualmente a seguinte estrutura:
+A estrutura atual do repositório inclui tanto os arquivos utilizados para a ambientalização quanto os arquivos relacionados ao OCR:
 
 ```text
 dav-automation-tools/
-├── saida_imagens/
-├── saida_texto/
+│
+├── documentos/
+│   └── Teste-de-OCR-Exemplo.pdf
+│
+├── ocr/
+│   └── app.py
+│
+├── output/
+│   └── Teste-de-OCR-Exemplo.txt
+│
 ├── Dockerfile
-├── ocr_pdf.py
-└── README.md
+├── Dockerfile.ocr
+├── README.md
+├── requirements.txt
+└── run-ocr.ps1
 ```
 
-## Principais arquivos
+## Principais arquivos e diretórios
 
 ### `Dockerfile`
 
-Define a imagem base utilizada pelos projetos.
+Define a imagem base utilizada pelos projetos da equipe para desenvolvimento.
 
-A imagem atualmente utiliza:
-
-```dockerfile
-FROM python:3.13-slim-bookworm
-```
-
-Além do Python, são instaladas ferramentas utilizadas pelos projetos da equipe.
-
-### `ocr_pdf.py`
-
-Exemplo de utilização do ambiente para processamento de documentos PDF utilizando OCR.
-
-O script:
-
-1. Abre um arquivo PDF;
-2. Processa cada página;
-3. Converte cada página do PDF em uma imagem;
-4. Salva as imagens em `saida_imagens/`;
-5. Executa OCR utilizando PaddleOCR;
-6. Extrai os textos encontrados;
-7. Salva o resultado em `saida_texto/resultado.txt`.
-
-### `saida_imagens/`
-
-Diretório utilizado pelo exemplo de OCR para armazenar as imagens geradas a partir das páginas do PDF.
-
-### `saida_texto/`
-
-Diretório utilizado para armazenar os resultados textuais gerados pelo OCR.
+Essa é a imagem relacionada à **ambientalização dos novos integrantes** e ao uso através do VS Code Dev Containers.
 
 ---
 
-# 🐳 Conteúdo da imagem Docker
+### `Dockerfile.ocr`
 
-O `Dockerfile` instala as principais ferramentas necessárias ao ambiente:
+Define a imagem Docker utilizada especificamente para execução da ferramenta de OCR.
+
+A imagem é construída com:
+
+```bash
+docker build -f Dockerfile.ocr -t dav-automation-ocr .
+```
+
+Depois de construída, ela pode ser executada independentemente do ambiente de desenvolvimento.
+
+---
+
+### `ocr/app.py`
+
+É o código responsável pela execução do processo de OCR.
+
+O processamento utiliza os arquivos disponibilizados no diretório:
+
+```text
+documentos/
+```
+
+e grava os resultados no diretório:
+
+```text
+output/
+```
+
+A execução ocorre dentro do container `dav-automation-ocr`, evitando a necessidade de configurar manualmente o ambiente de OCR na máquina do desenvolvedor.
+
+---
+
+### `documentos/`
+
+Diretório utilizado para armazenar os arquivos que serão processados pelo OCR.
+
+Exemplo:
+
+```text
+documentos/
+└── Teste-de-OCR-Exemplo.pdf
+```
+
+Novos PDFs ou imagens podem ser adicionados nesse diretório antes da execução do OCR.
+
+---
+
+### `output/`
+
+Diretório utilizado para armazenar os resultados gerados pelo OCR.
+
+Exemplo:
+
+```text
+output/
+└── Teste-de-OCR-Exemplo.txt
+```
+
+Como esse diretório é montado como volume do Docker, os resultados ficam disponíveis diretamente na máquina do desenvolvedor após o término da execução.
+
+---
+
+### `requirements.txt`
+
+Contém as dependências Python utilizadas pelos projetos que utilizam o ambiente de desenvolvimento.
+
+As dependências específicas de cada aplicação continuam sendo responsabilidade do projeto que está sendo desenvolvido.
+
+---
+
+# 🐳 Conteúdo da imagem de desenvolvimento
+
+O `Dockerfile` principal instala as principais ferramentas necessárias ao ambiente:
 
 | Componente          | Versão / Origem     |
 | ------------------- | ------------------- |
@@ -163,7 +253,9 @@ A imagem também configura:
 
 ```text
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
 PYTHONUNBUFFERED=1
+
 WORKDIR=/workspace
 ```
 
@@ -192,17 +284,18 @@ O Docker precisa estar instalado e funcionando antes de abrir o Dev Container.
 
 ---
 
-## 2. Clone o `dav-automation-tools`
+## 2. Clonar o `dav-automation-tools`
 
-O repositório precisa ser clonado em uma posição compatível com o `docker-compose.yml`.
+O repositório deve ser clonado em uma posição compatível com o `docker-compose.yml` utilizado pelos projetos.
 
 Exemplo:
 
 ```text
 workspace/
+
 ├── dav-automation-tools/
 │   ├── Dockerfile
-│   ├── ocr_pdf.py
+│   ├── Dockerfile.ocr
 │   └── README.md
 │
 └── projeto-a/
@@ -226,12 +319,13 @@ git clone <URL_DO_REPOSITORIO> dav-automation-tools
 
 # 📂 Estrutura necessária no projeto
 
-Todo projeto que utilizar o ambiente deverá possuir um diretório `.devcontainer`.
+Todo projeto que utilizar o ambiente de desenvolvimento deverá possuir um diretório `.devcontainer`.
 
 A estrutura esperada é:
 
 ```text
 projeto-a/
+
 ├── requirements.txt
 ├── ...
 └── .devcontainer/
@@ -240,7 +334,7 @@ projeto-a/
     └── devcontainer.json
 ```
 
-O arquivo `docker-compose.yml` deve utilizar o `dav-automation-tools` como contexto de build.
+O `docker-compose.yml` deve utilizar o `dav-automation-tools` como contexto de build.
 
 ---
 
@@ -254,39 +348,29 @@ services:
     build:
       context: ../../dav-automation-tools
       dockerfile: Dockerfile
-
     working_dir: /workspace
-
     volumes:
       - ..:/workspace
-
     env_file:
       - ./docker.env
-
     environment:
       TZ: America/Sao_Paulo
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-
     depends_on:
       postgres:
         condition: service_healthy
-
     stdin_open: true
     tty: true
 
   postgres:
     image: postgres:17
-
     env_file:
       - ./docker.env
-
     environment:
       TZ: America/Sao_Paulo
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
     healthcheck:
       test:
         [
@@ -315,7 +399,9 @@ Por isso, a estrutura de diretórios precisa ser compatível com:
 
 ```text
 workspace/
+
 ├── dav-automation-tools/
+
 └── projeto-a/
     └── .devcontainer/
         └── docker-compose.yml
@@ -333,11 +419,8 @@ Exemplo:
 
 ```env
 POSTGRES_DB=nome-do-db
-
 POSTGRES_NAME_DATABASE=nome-do-schema
-
 POSTGRES_USER=postgres
-
 POSTGRES_PASSWORD=senhaAqui
 ```
 
@@ -353,6 +436,7 @@ Uma alternativa é manter um arquivo de exemplo:
 
 ```text
 .devcontainer/
+
 ├── docker-compose.yml
 ├── docker.env
 ├── docker.env.example
@@ -379,17 +463,12 @@ Exemplo:
 ```json
 {
     "name": "Nome do Projeto - Python",
-
     "dockerComposeFile": [
         "docker-compose.yml"
     ],
-
     "service": "app",
-
     "workspaceFolder": "/workspace",
-
     "postCreateCommand": "pip install --no-cache-dir -r /workspace/requirements.txt",
-
     "customizations": {
         "vscode": {
             "extensions": [
@@ -401,7 +480,6 @@ Exemplo:
             }
         }
     },
-
     "remoteUser": "root"
 }
 ```
@@ -416,6 +494,7 @@ Exemplo:
 
 ```text
 projeto-a/
+
 ├── requirements.txt
 ├── src/
 └── .devcontainer/
@@ -433,16 +512,18 @@ Por exemplo:
 
 ```text
 Projeto A
-    └── requirements.txt
-        ├── pandas
-        ├── pyspark
-        └── paddleocr
+
+└── requirements.txt
+    ├── pandas
+    ├── pyspark
+    └── paddleocr
 
 Projeto B
-    └── requirements.txt
-        ├── fastapi
-        ├── sqlalchemy
-        └── requests
+
+└── requirements.txt
+    ├── fastapi
+    ├── sqlalchemy
+    └── requests
 ```
 
 Ambos podem utilizar o mesmo `dav-automation-tools`.
@@ -514,57 +595,189 @@ Isso permite que os dados do PostgreSQL sejam persistidos mesmo quando o contain
 
 ---
 
-# 🔍 Exemplo de OCR
+# 🔍 Ferramenta de OCR
 
-O projeto contém um exemplo de processamento de PDF utilizando:
+Além de fornecer a base de desenvolvimento, o `dav-automation-tools` possui uma ferramenta específica para processamento de documentos através de OCR.
 
-* PyMuPDF (`fitz`);
-* PaddleOCR;
-* Tesseract OCR;
-* Python.
+O OCR é executado em um **container separado**, utilizando o `Dockerfile.ocr`.
 
-O arquivo de entrada utilizado atualmente pelo script é:
+Essa separação permite que a ferramenta seja utilizada sem depender do ambiente de desenvolvimento do projeto.
 
-```text
-Teste-de-OCR-Exemplo.pdf
-```
-
-O script espera encontrar esse arquivo no diretório de trabalho:
+## Estrutura do OCR
 
 ```text
-/workspace
+dav-automation-tools/
+
+├── documentos/
+│   └── Teste-de-OCR-Exemplo.pdf
+│
+├── ocr/
+│   └── app.py
+│
+├── output/
+│   └── Teste-de-OCR-Exemplo.txt
+│
+└── Dockerfile.ocr
 ```
 
-A execução pode ser feita com:
+O fluxo de processamento é:
+
+```text
+documentos/
+     │
+     │ PDF / imagem
+     ▼
+dav-automation-ocr
+     │
+     │ ocr/app.py
+     ▼
+Processamento OCR
+     │
+     ▼
+output/
+     │
+     └── arquivo .txt
+```
+
+Os arquivos de entrada devem ser colocados em:
+
+```text
+documentos/
+```
+
+Os resultados serão disponibilizados em:
+
+```text
+output/
+```
+
+---
+
+# 🐳 Construindo a imagem do OCR
+
+Na raiz do repositório, execute:
 
 ```bash
-python ocr_pdf.py
+docker build -f Dockerfile.ocr -t dav-automation-ocr .
 ```
 
-Durante a execução, cada página do PDF é convertida em uma imagem e processada pelo OCR.
-
-A estrutura de saída será:
+Esse comando cria a imagem:
 
 ```text
-projeto/
-├── Teste-de-OCR-Exemplo.pdf
-├── ocr_pdf.py
-├── saida_imagens/
-│   ├── pagina_1.png
-│   ├── ...
-│   
-│
-└── saida_texto/
-    └── resultado.txt
+dav-automation-ocr
 ```
 
-O arquivo:
+---
+
+# ▶️ Executando o OCR
+
+Depois de construir a imagem, os arquivos presentes em `documentos/` podem ser processados utilizando volumes Docker.
+
+## Git Bash / terminal compatível
+
+```bash
+docker run --rm \
+    -v "C:/Users/usuario/DAV/dav-automation-tools/documentos:/app/documentos" \
+    -v "C:/Users/usuario/DAV/dav-automation-tools/output:/app/output" \
+    dav-automation-ocr
+```
+
+> O caminho `C:/Users/usuario/DAV/dav-automation-tools` deve ser ajustado de acordo com o local onde o repositório foi clonado.
+
+---
+
+## PowerShell (recomendado)
+
+No PowerShell, estando na raiz do projeto:
+
+```powershell
+docker run --rm `
+    -v "${PWD}\documentos:/app/documentos" `
+    -v "${PWD}\output:/app/output" `
+    dav-automation-ocr
+```
+
+O comando monta:
 
 ```text
-saida_texto/resultado.txt
+./documentos → /app/documentos
+./output     → /app/output
 ```
 
-contém o texto reconhecido pelo OCR.
+Dessa forma, o container consegue ler os documentos da máquina local e gravar os resultados diretamente no diretório `output/`.
+
+---
+
+# 🆕 Executando o projeto pela primeira vez
+
+Para um novo usuário, o fluxo completo para utilizar o OCR é:
+
+## 1. Clonar o repositório
+
+```bash
+git clone <URL_DO_REPOSITORIO>
+```
+
+## 2. Entrar no projeto
+
+```bash
+cd dav-automation-tools
+```
+
+## 3. Colocar os arquivos para OCR
+
+Copie os PDFs ou imagens que deseja processar para:
+
+```text
+.\documentos\
+```
+
+Por exemplo:
+
+```text
+documentos/
+├── documento-1.pdf
+├── documento-2.pdf
+└── imagem.png
+```
+
+## 4. Construir a imagem OCR
+
+```bash
+docker build -f Dockerfile.ocr -t dav-automation-ocr .
+```
+
+## 5. Executar o OCR
+
+No PowerShell:
+
+```powershell
+docker run --rm `
+    -v "${PWD}\documentos:/app/documentos" `
+    -v "${PWD}\output:/app/output" `
+    dav-automation-ocr
+```
+
+Após a execução, os resultados estarão disponíveis em:
+
+```text
+output/
+```
+
+---
+
+# 🔄 Diferença entre o ambiente de desenvolvimento e o OCR
+
+É importante diferenciar as duas imagens Docker existentes no projeto.
+
+| Imagem                      | Dockerfile       | Finalidade                                               |
+| --------------------------- | ---------------- | -------------------------------------------------------- |
+| Ambiente de desenvolvimento | `Dockerfile`     | Ambientalização e desenvolvimento dos projetos da equipe, vai conter as bibliotecas e as linguagens de programação necessárias para o desenvolvimento. |
+| OCR                         | `Dockerfile.ocr` | Processamento automatizado de documentos                 |
+
+A imagem principal não deve ser confundida com a imagem de OCR.
+
+O **objetivo principal do projeto continua sendo a padronização e automatização da ambientalização dos integrantes da equipe**. O OCR é uma ferramenta adicional disponibilizada no mesmo repositório para automatizar o processamento de documentos.
 
 ---
 
@@ -593,7 +806,8 @@ Se o Docker não estiver disponível, inicie o Docker antes de abrir o Dev Conta
 Verifique se a estrutura dos diretórios está correta:
 
 ```text
-workspace/
+sua-pasta/
+
 ├── dav-automation-tools/
 │   └── Dockerfile
 │
@@ -618,6 +832,7 @@ Verifique se o projeto possui:
 
 ```text
 projeto-a/
+
 ├── requirements.txt
 └── .devcontainer/
     └── devcontainer.json
@@ -652,7 +867,40 @@ O healthcheck do PostgreSQL utiliza `POSTGRES_USER` e `POSTGRES_NAME_DATABASE`.
 
 ---
 
-## Quero reconstruir a imagem
+## O OCR não gera arquivos no `output/`
+
+Verifique:
+
+1. Se existem arquivos dentro de `documentos/`;
+2. Se a imagem `dav-automation-ocr` foi construída;
+3. Se o volume `output` foi montado corretamente;
+4. Se o comando foi executado a partir da raiz do projeto.
+
+Para conferir os arquivos:
+
+```powershell
+Get-ChildItem .\documentos
+Get-ChildItem .\output
+```
+
+Caso necessário, reconstrua a imagem:
+
+```bash
+docker build -f Dockerfile.ocr -t dav-automation-ocr .
+```
+
+E execute novamente:
+
+```powershell
+docker run --rm `
+    -v "${PWD}\documentos:/app/documentos" `
+    -v "${PWD}\output:/app/output" `
+    dav-automation-ocr
+```
+
+---
+
+## Quero reconstruir a imagem de desenvolvimento
 
 Quando houver alterações no `Dockerfile`, pode ser necessário reconstruir o container.
 
@@ -672,7 +920,7 @@ Dev Containers: Rebuild Container
 
 # 🔄 Fluxo para novos integrantes
 
-O fluxo esperado para um novo integrante é:
+O fluxo esperado para um novo integrante utilizando a função principal do projeto é:
 
 ```text
 1. Instalar Git
@@ -700,60 +948,75 @@ O fluxo esperado para um novo integrante é:
 12. Ambiente pronto para desenvolvimento
 ```
 
+O OCR possui um fluxo independente:
+
+```text
+1. Clonar dav-automation-tools
+        ↓
+2. Colocar documentos em documentos/
+        ↓
+3. Construir Dockerfile.ocr
+        ↓
+4. Criar imagem dav-automation-ocr
+        ↓
+5. Executar o container
+        ↓
+6. OCR processa os documentos
+        ↓
+7. Resultados disponíveis em output/
+```
+
 ---
 
 # 💡 Conceito do projeto
 
-O principal objetivo do `dav-automation-tools` não é armazenar o código específico de cada aplicação.
+O principal objetivo do `dav-automation-tools` é **reduzir o esforço necessário para ambientalizar novos integrantes e manter ambientes de desenvolvimento consistentes entre os projetos da equipe**.
 
-Ele funciona como uma **base de ambiente de desenvolvimento compartilhada**.
+O repositório funciona como uma **base compartilhada de ferramentas e ambiente de desenvolvimento**, mas também reúne automações auxiliares, como o processamento de documentos através de OCR.
 
 A separação de responsabilidades é:
 
 ```text
 dav-automation-tools
+
         │
-        ├── Sistema operacional
-        ├── Python
-        ├── Java
-        ├── Node.js
-        ├── Tesseract
-        ├── PostgreSQL Client
-        └── Ferramentas comuns
-                 │
-                 ▼
-        ┌─────────────────────┐
-        │       Projeto A      │
-        │ requirements.txt     │
-        └─────────────────────┘
-
-                 │
-                 ▼
-
-        ┌─────────────────────┐
-        │       Projeto B      │
-        │ requirements.txt     │
-        └─────────────────────┘
-
-                 │
-                 ▼
-
-        ┌─────────────────────┐
-        │       Projeto C      │
-        │ requirements.txt     │
-        └─────────────────────┘
+        ├── Ambientalização
+        │       │
+        │       ├── Python
+        │       ├── Java
+        │       ├── Node.js
+        │       ├── Tesseract
+        │       ├── PostgreSQL Client
+        │       └── Ferramentas comuns
+        │
+        └── Automação OCR
+                │
+                ├── Dockerfile.ocr
+                ├── ocr/app.py
+                ├── documentos/
+                └── output/
 ```
 
-Dessa forma, a equipe consegue manter uma base de desenvolvimento consistente entre diferentes projetos, reduzindo o tempo necessário para preparar uma nova máquina.
+A parte de ambientalização continua sendo a **finalidade principal do projeto**, enquanto o OCR funciona como uma ferramenta complementar que pode ser executada de forma independente.
+
+Dessa forma, a equipe consegue:
+
+* Reduzir o tempo de preparação de novas máquinas;
+* Padronizar os ambientes de desenvolvimento;
+* Evitar configurações manuais diferentes entre integrantes;
+* Centralizar ferramentas comuns utilizadas pelos projetos;
+* Executar o processamento de documentos em um ambiente Docker isolado;
+* Facilitar a reprodução do processo de OCR em diferentes máquinas.
 
 ---
 
 # 📌 Convenções recomendadas
 
-Para novos projetos que utilizarem este ambiente, recomenda-se manter:
+Para novos projetos que utilizarem o ambiente de desenvolvimento, recomenda-se manter:
 
 ```text
 projeto/
+
 ├── requirements.txt
 ├── código da aplicação
 └── .devcontainer/
@@ -776,7 +1039,7 @@ e o container deve utilizar:
 
 como diretório de trabalho.
 
-O `devcontainer.json` deve utilizar o serviço:
+O `devcontainer.json` deve utilizar:
 
 ```json
 "service": "app"
@@ -788,10 +1051,28 @@ e:
 "workspaceFolder": "/workspace"
 ```
 
+Para a ferramenta de OCR, recomenda-se manter a seguinte estrutura:
+
+```text
+dav-automation-tools/
+
+├── documentos/
+├── ocr/
+├── output/
+├── Dockerfile.ocr
+└── run-ocr.ps1
+```
+
+Os arquivos de entrada devem ser colocados em `documentos/` e os resultados gerados devem ser armazenados em `output/`.
+
 ---
 
 # 👥 Manutenção
 
-Este projeto deve ser tratado como a **base compartilhada dos ambientes de desenvolvimento da equipe**.
+Este projeto deve ser tratado como a **base compartilhada dos ambientes de desenvolvimento e ferramentas de automação da equipe**.
 
-Alterações no `Dockerfile` podem afetar todos os projetos que utilizam esta imagem. Por isso, recomenda-se validar as alterações antes de disponibilizá-las para utilização geral.
+Alterações no `Dockerfile` podem afetar todos os projetos que utilizam essa imagem. Por isso, recomenda-se validar as alterações antes de disponibilizá-las para utilização geral.
+
+Alterações no `Dockerfile.ocr` ou no código localizado em `ocr/app.py` devem ser testadas com documentos de exemplo antes de serem disponibilizadas para uso geral.
+
+A separação entre `Dockerfile` e `Dockerfile.ocr` deve ser mantida para evitar que alterações específicas do OCR impactem desnecessariamente o ambiente principal de desenvolvimento.
