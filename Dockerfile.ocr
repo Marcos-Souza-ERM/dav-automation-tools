@@ -1,0 +1,27 @@
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Tesseract + idiomas
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        tesseract-ocr \
+        tesseract-ocr-por \
+        tesseract-ocr-eng && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Dependências Python do OCR
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Código
+COPY ocr/app.py /app/app.py
+
+# Diretórios usados pelo programa
+RUN mkdir -p /app/documentos /app/output
+
+CMD ["python", "/app/app.py"]
